@@ -1,7 +1,8 @@
 import json
+import tkinter as tk
 from dataclasses import dataclass
 from datetime import datetime
-from tkinter import Tk, StringVar, Text, Toplevel, filedialog, messagebox
+from tkinter import Tk, StringVar, filedialog, messagebox
 from tkinter import ttk
 
 SUPPORTED_BASES = (2, 8, 10, 16)
@@ -34,14 +35,14 @@ class ConversionRecord:
 class BaseCalculatorApp:
     def __init__(self, root: Tk) -> None:
         self.root = root
-        self.root.title("Calculator for Bases")
+        self.root.title("Outil de conversion de bases")
         self.root.geometry("980x620")
 
         self.input_var = StringVar()
         self.source_base_var = StringVar(value="Decimal (10)")
         self.target_base_var = StringVar(value="Binary (2)")
         self.result_var = StringVar(value="")
-        self.status_var = StringVar(value="Enter a number to convert.")
+        self.status_var = StringVar(value="Entrez un nombre à convertir.")
 
         self.history: list[ConversionRecord] = []
 
@@ -53,35 +54,52 @@ class BaseCalculatorApp:
         main = ttk.Frame(self.root, padding=14)
         main.pack(fill="both", expand=True)
 
-        input_box = ttk.LabelFrame(main, text="Base Converter", padding=12)
+        # ── Pastel colour palette ──
+        PASTEL_BLUE   = "#a8c8f0"
+        PASTEL_RED    = "#f4a7a7"
+        PASTEL_GREEN  = "#a8e6b4"
+        BTN_FG        = "#1a1a1a"
+        BTN_ACTIVE_BG = "#d0d0d0"
+
+        # Style for readonly comboboxes (pastel blue)
+        style = ttk.Style()
+        style.configure("Blue.TCombobox",
+                        fieldbackground=PASTEL_BLUE,
+                        background=PASTEL_BLUE,
+                        selectbackground=PASTEL_BLUE,
+                        selectforeground=BTN_FG)
+
+        input_box = ttk.LabelFrame(main, text="Outil de conversion de bases", padding=12)
         input_box.pack(fill="x", pady=(0, 10))
 
-        ttk.Label(input_box, text="Original number").grid(row=0, column=0, sticky="w")
+        ttk.Label(input_box, text="Nombre d'origine").grid(row=0, column=0, sticky="w")
         entry = ttk.Entry(input_box, textvariable=self.input_var, width=42)
         entry.grid(row=1, column=0, padx=(0, 12), sticky="ew")
         entry.focus_set()
 
-        ttk.Label(input_box, text="Source base").grid(row=0, column=1, sticky="w")
+        ttk.Label(input_box, text="Base source").grid(row=0, column=1, sticky="w")
         src_combo = ttk.Combobox(
             input_box,
             textvariable=self.source_base_var,
             values=list(BASE_LABELS.keys()),
             state="readonly",
             width=18,
+            style="Blue.TCombobox",
         )
         src_combo.grid(row=1, column=1, padx=(0, 12), sticky="ew")
 
-        ttk.Label(input_box, text="Target base").grid(row=0, column=2, sticky="w")
+        ttk.Label(input_box, text="Base cible").grid(row=0, column=2, sticky="w")
         dst_combo = ttk.Combobox(
             input_box,
             textvariable=self.target_base_var,
             values=list(BASE_LABELS.keys()),
             state="readonly",
             width=18,
+            style="Blue.TCombobox",
         )
         dst_combo.grid(row=1, column=2, padx=(0, 12), sticky="ew")
 
-        ttk.Label(input_box, text="Converted result").grid(row=0, column=3, sticky="w")
+        ttk.Label(input_box, text="Résultat converti").grid(row=0, column=3, sticky="w")
         ttk.Entry(input_box, textvariable=self.result_var, state="readonly", width=35).grid(
             row=1, column=3, sticky="ew"
         )
@@ -89,23 +107,22 @@ class BaseCalculatorApp:
         button_row = ttk.Frame(input_box)
         button_row.grid(row=2, column=0, columnspan=4, sticky="w", pady=(10, 0))
 
-        ttk.Button(button_row, text="Save to History", command=self.save_current_conversion).pack(
-            side="left", padx=(0, 8)
-        )
-        ttk.Button(button_row, text="Clear Inputs", command=self.clear_inputs).pack(
-            side="left", padx=(0, 8)
-        )
-
-        ttk.Label(
-            input_box,
-            text=(
-                "Binary input uses two's complement for negatives. "
-                "Bases 8/10/16 use explicit '-' sign for negatives."
-            ),
-        ).grid(row=3, column=0, columnspan=4, sticky="w", pady=(10, 0))
+        # Pastel-red "Clear Inputs" button
+        tk.Button(
+            button_row,
+            text="Effacer la saisie",
+            command=self.clear_inputs,
+            bg=PASTEL_RED,
+            fg=BTN_FG,
+            activebackground=BTN_ACTIVE_BG,
+            relief="flat",
+            padx=10,
+            pady=4,
+            cursor="hand2",
+        ).pack(side="left", padx=(0, 8))
 
         ttk.Label(input_box, textvariable=self.status_var, foreground="#7a0000").grid(
-            row=4, column=0, columnspan=4, sticky="w", pady=(6, 0)
+            row=3, column=0, columnspan=4, sticky="w", pady=(6, 0)
         )
 
         input_box.columnconfigure(0, weight=2)
@@ -113,16 +130,16 @@ class BaseCalculatorApp:
         input_box.columnconfigure(2, weight=1)
         input_box.columnconfigure(3, weight=2)
 
-        history_box = ttk.LabelFrame(main, text="History", padding=10)
+        history_box = ttk.LabelFrame(main, text="Historique", padding=10)
         history_box.pack(fill="both", expand=True)
 
         columns = ("timestamp", "original", "source", "target", "result")
         self.tree = ttk.Treeview(history_box, columns=columns, show="headings", height=13)
-        self.tree.heading("timestamp", text="Date & Time")
-        self.tree.heading("original", text="Original Number")
-        self.tree.heading("source", text="Source Base")
-        self.tree.heading("target", text="Target Base")
-        self.tree.heading("result", text="Result")
+        self.tree.heading("timestamp", text="Date & Heure")
+        self.tree.heading("original", text="Nombre d'origine")
+        self.tree.heading("source", text="Base source")
+        self.tree.heading("target", text="Base cible")
+        self.tree.heading("result", text="Résultat converti")
 
         self.tree.column("timestamp", width=170, anchor="w")
         self.tree.column("original", width=180, anchor="w")
@@ -138,18 +155,22 @@ class BaseCalculatorApp:
         history_actions = ttk.Frame(main)
         history_actions.pack(fill="x", pady=(8, 0))
 
-        ttk.Button(history_actions, text="Delete Selected", command=self.delete_selected_history).pack(
+        ttk.Button(history_actions, text="Vider l'historique", command=self.clear_history).pack(
             side="left", padx=(0, 8)
         )
-        ttk.Button(history_actions, text="Clear History", command=self.clear_history).pack(
-            side="left", padx=(0, 8)
-        )
-        ttk.Button(history_actions, text="Export JSON", command=self.export_history_json).pack(
-            side="left", padx=(0, 8)
-        )
-        ttk.Button(history_actions, text="Explore JSON", command=self.explore_history_json).pack(
-            side="left", padx=(0, 8)
-        )
+        # Pastel-green "Export JSON" button
+        tk.Button(
+            history_actions,
+            text="Exporter l'historique (en JSON)",
+            command=self.export_history_json,
+            bg=PASTEL_GREEN,
+            fg=BTN_FG,
+            activebackground=BTN_ACTIVE_BG,
+            relief="flat",
+            padx=10,
+            pady=4,
+            cursor="hand2",
+        ).pack(side="left", padx=(0, 8))
 
     def _bind_events(self) -> None:
         self.input_var.trace_add("write", lambda *_: self.update_result())
@@ -222,14 +243,34 @@ class BaseCalculatorApp:
 
         if not raw_text.strip():
             self.result_var.set("")
-            self.status_var.set("Enter a number to convert.")
+            self.status_var.set("Entrez un nombre à convertir.")
             return
 
         try:
             value = self.parse_input_value(raw_text, src_base)
             converted = self.format_output_value(value, dst_base)
             self.result_var.set(converted)
-            self.status_var.set("Conversion ready.")
+            # Auto-save every successful conversion
+            record = ConversionRecord(
+                timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                original_number=raw_text,
+                source_base=src_base,
+                target_base=dst_base,
+                result_value=converted,
+            )
+            self.history.append(record)
+            self.tree.insert(
+                "",
+                "end",
+                values=(
+                    record.timestamp,
+                    record.original_number,
+                    record.source_base,
+                    record.target_base,
+                    record.result_value,
+                ),
+            )
+            self.status_var.set("Conversion effectuée — enregistrée dans l'historique.")
         except ValueError as exc:
             self.result_var.set("")
             self.status_var.set(str(exc))
@@ -274,7 +315,7 @@ class BaseCalculatorApp:
     def clear_inputs(self) -> None:
         self.input_var.set("")
         self.result_var.set("")
-        self.status_var.set("Inputs cleared.")
+        self.status_var.set("Saisie effacée.")
 
     def delete_selected_history(self) -> None:
         selected = self.tree.selection()
@@ -295,22 +336,22 @@ class BaseCalculatorApp:
         if not self.history:
             return
 
-        if not messagebox.askyesno("Clear History", "Delete all history entries?"):
+        if not messagebox.askyesno("Vider l'historique", "Supprimer toutes les entrées de l'historique ?"):
             return
 
         self.history.clear()
         for item_id in self.tree.get_children():
             self.tree.delete(item_id)
 
-        self.status_var.set("History cleared.")
+        self.status_var.set("Historique vidé.")
 
     def export_history_json(self) -> None:
         if not self.history:
-            messagebox.showinfo("Export", "No history available to export.")
+            messagebox.showinfo("Exporter", "Aucun historique disponible à exporter.")
             return
 
         path = filedialog.asksaveasfilename(
-            title="Export History as JSON",
+            title="Exporter l'historique en JSON",
             defaultextension=".json",
             filetypes=[("JSON files", "*.json")],
             initialfile="conversion_history.json",
@@ -322,7 +363,7 @@ class BaseCalculatorApp:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
 
-        self.status_var.set(f"History exported to {path}")
+        self.status_var.set(f"Historique exporté vers {path}")
 
     def explore_history_json(self) -> None:
         preview = Toplevel(self.root)
