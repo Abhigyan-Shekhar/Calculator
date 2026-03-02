@@ -58,6 +58,7 @@ class BaseCalculatorApp:
         PASTEL_BLUE   = "#a8c8f0"
         PASTEL_RED    = "#f4a7a7"
         PASTEL_GREEN  = "#a8e6b4"
+        PASTEL_ORANGE = "#ffcc99"
         BTN_FG        = "#1a1a1a"
         BTN_ACTIVE_BG = "#d0d0d0"
 
@@ -155,9 +156,18 @@ class BaseCalculatorApp:
         history_actions = ttk.Frame(main)
         history_actions.pack(fill="x", pady=(8, 0))
 
-        ttk.Button(history_actions, text="Vider l'historique", command=self.clear_history).pack(
-            side="left", padx=(0, 8)
-        )
+        tk.Button(
+            history_actions,
+            text="Vider l'historique",
+            command=self.clear_history,
+            bg=PASTEL_ORANGE,
+            fg=BTN_FG,
+            activebackground=BTN_ACTIVE_BG,
+            relief="flat",
+            padx=10,
+            pady=4,
+            cursor="hand2",
+        ).pack(side="left", padx=(0, 8))
         # Pastel-green "Export JSON" button
         tk.Button(
             history_actions,
